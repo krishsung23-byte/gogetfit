@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>GetFit - Premium Fitness Tracking</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js for graphs -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div id="app-container">
+    
+    <!-- Screen 1: Dashboard -->
+    <section id="screen-dashboard" class="screen active">
+      <header style="align-items:flex-start; border-bottom: none; padding-bottom: 0;">
+        <div style="flex:1;">
+          <h1 id="dash-greeting" style="font-size: 28px;">Good Morning, Athlete</h1>
+          <div style="display:flex; align-items:baseline; gap:12px; margin-top:8px;">
+            <span style="font-size: 32px; font-weight:800; font-family:'Outfit', sans-serif;" id="dash-weight">78.5 kg</span>
+            <span class="trend positive" id="dash-weight-trend" style="background:transparent; padding:0; font-size:14px;"><i data-lucide="trending-down"></i> -1.2kg</span>
+          </div>
+        </div>
+        <div class="profile-pic"></div>
+      </header>
+      
+      <!-- Mini Graph -->
+      <div class="card" style="margin-bottom: 24px; padding:16px 16px 8px 16px;">
+        <h4 style="font-size:12px; color:var(--text-secondary); text-transform:uppercase; margin-bottom:8px;">Last 7 Days</h4>
+        <div style="height: 80px; width: 100%;">
+          <canvas id="dashMiniChart"></canvas>
+        </div>
+      </div>
+      
+      <!-- Quick Actions -->
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px;">
+        <div class="card" style="padding:16px; text-align:center; cursor:pointer;" onclick="openWeightModal()">
+          <i data-lucide="scale" style="color:var(--neon-blue); margin-bottom:8px;"></i>
+          <div style="font-size:12px; font-weight:600;">Log Weight</div>
+        </div>
+        <div class="card" style="padding:16px; text-align:center; cursor:pointer;" onclick="switchTab('workout')">
+          <i data-lucide="play" style="color:var(--neon-green); margin-bottom:8px;"></i>
+          <div style="font-size:12px; font-weight:600;">Workout</div>
+        </div>
+        <div class="card" style="padding:16px; text-align:center; cursor:pointer;" onclick="openManualExerciseModal()">
+          <i data-lucide="plus" style="color:var(--text-primary); margin-bottom:8px;"></i>
+          <div style="font-size:12px; font-weight:600;">Add Exercise</div>
+        </div>
+      </div>
+
+      <!-- Today's Workout -->
+      <div class="card stat-card primary" style="margin-bottom: 24px;">
+        <h3>Today's Focus</h3>
+        <h2 id="dash-workout-name">Push Day</h2>
+        <p style="margin-bottom:16px; font-size:14px; opacity:0.8;" id="dash-workout-count">5 Exercises</p>
+        <button class="btn-neon" onclick="startWorkoutFlow()">Start Workout</button>
+      </div>
+      
+      <!-- Progress Snapshots -->
+      <h3 style="font-size: 16px; margin-bottom: 12px;">Snapshots</h3>
+      <div style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 16px;" class="hide-scrollbar">
+        <div class="card" style="min-width: 140px; padding: 16px;">
+          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:4px;">Goal</div>
+          <div style="font-size:24px; font-weight:700; font-family:'Outfit';" id="dash-goal-pct">Body Weight Goal</div>
+        </div>
+        <div class="card" style="min-width: 140px; padding: 16px;">
+          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:4px;">Highest Weight</div>
+          <div style="font-size:24px; font-weight:700; font-family:'Outfit';" id="dash-high-wt">82.5 kg</div>
+        </div>
+        <div class="card" style="min-width: 140px; padding: 16px;">
+          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:4px;">Lowest Weight</div>
+          <div style="font-size:24px; font-weight:700; font-family:'Outfit';" id="dash-low-wt">74.9 kg</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Screen 2: Progress (Variant 2: Data-Driven) -->
+    <section id="screen-progress" class="screen">
+      <header style="display:flex; align-items:center; gap:16px;">
+        <button class="btn-icon" style="background:var(--surface-color); border:1px solid rgba(255,255,255,0.05);" onclick="navigateBack()">
+          <i data-lucide="arrow-left"></i>
+        </button>
+        <h1 style="flex:1;">Analytics</h1>
+        <button class="btn-icon" onclick="openWeightModal()"><i data-lucide="scale"></i></button>
+      </header>
+      
+      <div class="tabs" id="progress-tabs">
+        <div class="tab active" data-target="weight">Weight</div>
+        <div class="tab" data-target="bodyfat">Body Fat</div>
+        <div class="tab" data-target="strength">Strength</div>
+      </div>
+      
+      <div class="card chart-card">
+        <div class="chart-header">
+          <h3 id="chart-title">Weight Trend</h3>
+          <div class="time-filters">
+            <span class="filter-pill" onclick="setChartFilter('7')">7D</span>
+            <span class="filter-pill" onclick="setChartFilter('30')">30D</span>
+            <span class="filter-pill active" onclick="setChartFilter('all')">ALL</span>
+          </div>
+        </div>
+        
+        <div id="strength-toggles" class="sub-toggles" style="display: none;">
+          <span class="toggle-pill active" onclick="setStrengthMetric('topset')">Top Set</span>
+          <span class="toggle-pill" onclick="setStrengthMetric('1rm')">Est. 1RM</span>
+        </div>
+
+        <div class="chart-scroll-wrapper">
+          <div class="chart-container" id="chart-container-inner">
+            <canvas id="mainChart"></canvas>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Advanced Metrics (Only visible when Weight is active) -->
+      <div id="advanced-metrics-dashboard" class="metrics-grid">
+        <div class="metric-card">
+          <span class="m-label">Weekly Change</span>
+          <span class="m-value" id="metric-change">-0.5 kg</span>
+        </div>
+        <div class="metric-card">
+          <span class="m-label">Daily Deficit</span>
+          <span class="m-value" id="metric-deficit">~550 kcal</span>
+        </div>
+        <div class="metric-card">
+          <span class="m-label">Goal</span>
+          <span class="m-value" id="metric-goal" style="font-size:14px;">Body Weight Goal</span>
+        </div>
+        <div class="metric-card">
+          <span class="m-label">High / Low</span>
+          <span class="m-value" id="metric-highlow"><span style="color:#A0A0A0; font-size:12px;">H:</span> 82 <span style="color:#A0A0A0; font-size:12px; margin-left:4px;">L:</span> 74.9</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Screen 3: Workout Log -->
+    <section id="screen-workout" class="screen">
+      <header style="display:flex; align-items:center; gap:16px;">
+        <button class="btn-icon" style="background:var(--surface-color); border:1px solid rgba(255,255,255,0.05);" onclick="navigateBack()">
+          <i data-lucide="arrow-left"></i>
+        </button>
+        <h1 style="flex:1;">Log Workout</h1>
+      </header>
+
+      <div class="card paste-card">
+        <h3>Smart Import</h3>
+        <p class="help-text">Paste your workout split below. We'll automatically detect days and exercises.</p>
+        <textarea id="paste-workout-input" rows="6" placeholder="Monday:&#10;Bench Press&#10;Incline DB Press&#10;&#10;Tuesday:&#10;Squats&#10;Leg Press"></textarea>
+        <button class="btn-neon outline" onclick="parseWorkout()">Parse Workout</button>
+      </div>
+
+      <div id="parsed-preview" class="parsed-preview" style="display: none;">
+        <h3>Parsed Plan</h3>
+        <div id="parsed-days-container"></div>
+        <button class="btn-neon" onclick="saveParsedWorkout()">Save to Plan</button>
+      </div>
+      <div id="day-selection-container" style="display: none; margin-top: 24px;">
+        <h3 style="margin-bottom: 16px;">What are we doing today?</h3>
+        <div id="day-selection-list" style="display:flex; flex-direction:column; gap:12px;">
+          <!-- Dynamically populated day cards -->
+        </div>
+      </div>
+      
+      <div id="today-workout-container" style="margin-top: 24px; display: none;">
+        <div style="display:flex; align-items:center; margin-bottom: 16px;">
+          <button class="btn-icon" style="background:var(--surface-color); border:1px solid rgba(255,255,255,0.05); margin-right: 12px;" onclick="closeActiveWorkout()">
+            <i data-lucide="arrow-left"></i>
+          </button>
+          <div style="flex:1;">
+            <h3 id="today-workout-title" style="margin:0; font-size:20px;">Push Day</h3>
+            <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">
+              <span id="today-workout-date">12 Feb</span> • <span id="today-workout-count">0 Exercises</span>
+            </div>
+          </div>
+        </div>
+        
+        <div id="today-exercise-list">
+          <!-- Advanced Logging Cards will be injected here -->
+        </div>
+        
+        <button class="btn-neon outline" style="margin-top: 16px; width: 100%; border-style: dashed;" onclick="openManualExerciseModal()">
+          <i data-lucide="plus" style="margin-right:8px; vertical-align:middle;"></i> Add Exercise Manually
+        </button>
+      </div>
+    </section>
+
+    <!-- Screen 4: Settings -->
+    <section id="screen-settings" class="screen">
+      <header style="display:flex; align-items:center; gap:16px;">
+        <button class="btn-icon" style="background:var(--surface-color); border:1px solid rgba(255,255,255,0.05);" onclick="navigateBack()">
+          <i data-lucide="arrow-left"></i>
+        </button>
+        <h1 style="flex:1;">Profile</h1>
+      </header>
+      <div class="premium-showcase">
+        <div class="card premium-banner" style="cursor:pointer;" onclick="switchTab('premium')">
+          <div class="premium-badge">PRO</div>
+          <h2>GetFit Premium</h2>
+          <p>You have access to AI insights and advanced analytics.</p>
+        </div>
+        
+        <div class="settings-list">
+          <div class="setting-item">
+            <div class="s-icon"><i data-lucide="user"></i></div>
+            <span>Account Details</span>
+            <i data-lucide="chevron-right" class="arrow"></i>
+          </div>
+          <div class="setting-item" style="flex-direction:column; align-items:flex-start; gap:12px;">
+            <div style="display:flex; align-items:center; width:100%; justify-content:space-between;">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <div class="s-icon"><i data-lucide="bell"></i></div>
+                <span>Daily Weight Reminder</span>
+              </div>
+              <div class="toggle active" id="reminder-toggle" onclick="this.classList.toggle('active')"></div>
+            </div>
+            <div style="display:flex; align-items:center; width:100%; justify-content:space-between; padding-left:44px;">
+              <span style="font-size:14px; color:var(--text-secondary);">Reminder Time</span>
+              <input type="time" id="reminder-time" value="08:00" style="background:var(--bg-color); border:1px solid var(--surface-light); color:var(--text-primary); padding:4px 8px; border-radius:4px; font-family:'Inter', sans-serif;">
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="s-icon"><i data-lucide="moon"></i></div>
+            <span>Dark Theme</span>
+            <div class="toggle active"></div>
+          </div>
+          <div class="setting-item" style="flex-direction:column; align-items:flex-start; gap:8px; border-bottom:none;">
+            <div style="display:flex; align-items:center; width:100%;">
+              <div class="s-icon"><i data-lucide="target"></i></div>
+              <span>Goal Weight (kg)</span>
+            </div>
+            <input type="number" id="goal-weight-input" value="70.0" step="0.1" style="width:100%;" onchange="updateProfile('goalWeight', this.value)">
+          </div>
+          
+          <div class="setting-item" style="flex-direction:column; align-items:flex-start; gap:8px; border-bottom:none;">
+            <div style="display:flex; align-items:center; width:100%;">
+              <div class="s-icon"><i data-lucide="user"></i></div>
+              <span>Your Name</span>
+            </div>
+            <input type="text" id="profile-name-input" placeholder="e.g. Arjun" style="width:100%;" oninput="updateProfile('name', this.value)">
+          </div>
+          
+          <div class="setting-item" style="flex-direction:column; align-items:flex-start; gap:8px; border-bottom:none;">
+            <div style="display:flex; align-items:center; width:100%;">
+              <div class="s-icon"><i data-lucide="line-chart"></i></div>
+              <span>Height (cm)</span>
+            </div>
+            <input type="number" id="profile-height-input" value="175" step="1" style="width:100%;" onchange="updateProfile('height', this.value)">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Screen: Exercise Detail -->
+    <section id="screen-exercise-detail" class="screen detail-screen">
+      <header class="detail-header">
+        <button class="btn-icon back-btn" onclick="closeExerciseDetail()">
+          <i data-lucide="arrow-left"></i>
+        </button>
+        <h1 id="detail-exercise-name">Bench Press</h1>
+        <div style="width: 36px;"></div> <!-- Spacer -->
+      </header>
+      
+      <div class="card stat-card primary pr-card">
+        <h3>Personal Record (1RM)</h3>
+        <h2><span id="detail-pr">105</span> <span class="unit">kg</span></h2>
+        <div class="trend positive">
+          <i data-lucide="trending-up"></i> Achieved Oct 12
+        </div>
+      </div>
+
+      <div class="card chart-card">
+        <h3>Progress History</h3>
+        <div class="chart-scroll-wrapper">
+          <div class="chart-container" id="detail-chart-container">
+            <canvas id="detailChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="card history-card">
+        <h3>Recent History</h3>
+        <div class="history-list" id="detail-history-list">
+          <!-- Dynamic history goes here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Screen 5: Premium (Placeholder) -->
+    <section id="screen-premium" class="screen">
+      <header style="display:flex; align-items:center; gap:16px;">
+        <button class="btn-icon" style="background:var(--surface-color); border:1px solid rgba(255,255,255,0.05);" onclick="navigateBack()">
+          <i data-lucide="arrow-left"></i>
+        </button>
+        <h1 style="flex:1; color: var(--neon-blue);">Premium</h1>
+      </header>
+      
+      <div style="padding: 24px 16px; text-align: center;">
+        <div style="display:inline-block; background: var(--neon-blue); color: #000; padding: 4px 12px; border-radius: 12px; font-weight: 800; font-size: 14px; margin-bottom: 24px;">COMING SOON</div>
+        
+        <h2 style="font-size: 28px; margin-bottom: 16px; font-family: 'Outfit';">Unlock Your Potential</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 32px;">GetFit Premium is under active development. Prepare to take your fitness journey to the next level.</p>
+        
+        <div class="card" style="text-align: left; padding: 24px;">
+          <h3 style="margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px;">Premium includes:</h3>
+          <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 16px;">
+            <li style="display:flex; align-items:center; gap:12px;"><i data-lucide="pie-chart" style="color:var(--neon-blue); width:20px;"></i> Advanced analytics dashboard</li>
+            <li style="display:flex; align-items:center; gap:12px;"><i data-lucide="message-square" style="color:var(--neon-green); width:20px;"></i> AI Chatbot for custom training & queries</li>
+            <li style="display:flex; align-items:center; gap:12px;"><i data-lucide="utensils" style="color:#FF0055; width:20px;"></i> Diet guidance & food volume estimation</li>
+            <li style="display:flex; align-items:center; gap:12px;"><i data-lucide="trending-up" style="color:var(--neon-blue); width:20px;"></i> Progress forecasting</li>
+            <li style="display:flex; align-items:center; gap:12px;"><i data-lucide="cloud" style="color:#FFF; width:20px;"></i> Cloud sync across devices</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- Bottom Navigation (Flat & Structured) -->
+    <nav class="bottom-nav">
+      <div class="nav-container">
+        <button class="nav-item active" onclick="switchTab('dashboard')" data-tab="dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Home</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('progress')" data-tab="progress">
+          <i data-lucide="bar-chart-2"></i>
+          <span>Progress</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('workout')" data-tab="workout">
+          <i data-lucide="clipboard-list"></i>
+          <span>Workout</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('settings')" data-tab="settings">
+          <i data-lucide="settings"></i>
+          <span>Profile</span>
+        </button>
+      </div>
+    </nav>
+  </div>
+  
+  <!-- Centered Modal for Logging Weight -->
+  <div id="weight-modal" class="modal-overlay">
+    <div class="modal-card">
+      <h3>Log Weight</h3>
+      <p class="subtitle" style="margin-bottom: 24px;">Enter your weight for today.</p>
+      
+      <div class="input-group" style="flex-direction: column; gap: 16px;">
+        <input type="number" id="weight-input" placeholder="0.0" step="0.1">
+        <input type="date" id="weight-date">
+      </div>
+      
+      <div class="btn-row">
+        <button class="btn-neon secondary" onclick="closeWeightModal()">Cancel</button>
+        <button class="btn-neon" onclick="logWeight()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Centered Modal for Logging Body Fat -->
+  <div id="bodyfat-modal" class="modal-overlay">
+    <div class="modal-card">
+      <h3>Log Body Fat %</h3>
+      <p class="subtitle" style="margin-bottom: 24px;">Track your body composition.</p>
+      
+      <div class="input-group" style="flex-direction: column; gap: 16px;">
+        <input type="number" id="bodyfat-input" placeholder="0.0" step="0.1">
+        <input type="date" id="bodyfat-date">
+      </div>
+      
+      <div class="btn-row">
+        <button class="btn-neon secondary" onclick="closeBodyFatModal()">Cancel</button>
+        <button class="btn-neon" onclick="logBodyFat()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Centered Modal for Manual Exercise -->
+  <div id="manual-exercise-modal" class="modal-overlay">
+    <div class="modal-card">
+      <h3>Add Exercise</h3>
+      <div class="input-group" style="flex-direction: column; gap: 12px; margin-top:16px;">
+        <input type="text" id="manual-ex-name" placeholder="Exercise Name (e.g. Squat)">
+        <div style="display:flex; gap:12px;">
+          <input type="number" id="manual-ex-sets" placeholder="Sets" value="3" style="flex:1;">
+          <input type="text" id="manual-ex-reps" placeholder="Reps (e.g. 8-12)" style="flex:1;">
+        </div>
+      </div>
+      
+      <div class="btn-row">
+        <button class="btn-neon secondary" onclick="closeManualExerciseModal()">Cancel</button>
+        <button class="btn-neon" onclick="addManualExercise()">Add</button>
+      </div>
+    </div>
+  </div>
+  
+  <script src="app.js"></script>
+</body>
+</html>
